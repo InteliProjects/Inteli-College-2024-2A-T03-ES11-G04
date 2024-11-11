@@ -1,0 +1,64 @@
+name: Vizion Continuous Integration
+
+on:
+  workflow_dispatch:
+  
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2 
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+
+    - name: Install dependencies
+      working-directory: ./data_app/app
+      run: |
+        poetry install
+
+    - name: Run Unit Tests with Pytest and Generate Report
+      working-directory: ./src/data_app/app/tests
+      run: |
+        poetry run pytest --junitxml=report.xml --cov=../ --cov-report=xml -p no:warnings
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: src/data_app/app/tests/tests/report.xml
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+
+    - name: Build the Solution
+      working-directory: ./data_app/app
+      run: |
+        poetry install
+        poetry build
